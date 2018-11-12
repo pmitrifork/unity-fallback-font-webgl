@@ -1,0 +1,147 @@
+# LEGO EV3 Programmer
+
+<!-- Summary of the project:
+- What problem does the solution solve?
+- If applicable: how to use the solution, or links to other resources that describes example usage.
+- Who is the target user?
+- Who is the customer?
+- Supported languages -->
+
+## Confidentiality
+<!-- What is the level of confidentiality / NDA ? -->
+
+## Prerequisites
+
+There's no prerequisites required to run the software.
+
+Unity 5.3.2p2 is required to build all targets of the software. Android and WebGL Unity targets are required during Unity installation. This document should be updated if Unity versions are changed over time.
+
+### Chrome target
+
+- Docker
+- A copy of the LEGO-Core-ChromeOS repository
+- A direct connection to Trifork LAN or VPN access
+
+### Content pack processing requirements
+
+Various third party tools are used to preprocess assets for different content packs. These are all optional 3rd party requirements needed at various stages when [processing new content from LEGO](#newContent). Install these as needed.
+
+- Bash
+- Mono
+- Groovy
+- imageMagick
+- Python 2.7
+    + beautifulSoup4
+
+## Installation
+
+<!-- A step by step series of examples that tell you have to get a development env running -->
+
+## Processing new content {#newContent}
+
+This section is mainly a description of the /tools folder. Scripts here do NOT have a consistent calling structure or a very intuitive interface, so, here we go:
+
+### New localization data
+
+If any strings get updated in the app, it's likely we need to process .resx localisation files from LEGO. New localisation content from LEGO should be placed in /tools/localization-resources/LocalizedMaterials. The following scripts should be ran to convert and import the data:
+
+- /tools/localizatino-resources/install_blocks_xml_strings.sh - if blocks.xml files change
+- /tools/localizatino-resources/install_overlay_help.sh - if help overlays change
+- /tools/localizatino-resources/install_resex_files.sh - always
+
+After importing the localization files, Unity fonts must be updated. Most text is rendered using TextMeshPro and does not directly use a .ttf font. We use Signed Distance Field rendering instead and we generate a font texture manually. Run `make locale-chars` in /tools to parse all localization data and generate a unique. Then open Unity and go to Window > Text Mesh Pro - Font Asset Creator. Parameters required to update the font asset:
+
+- Font Source: Fonts/Roboto-v1.2/Roboto-Regular-With-Fallback
+- Font Size: Custom Size - 32
+- Atlas Resolution: 2048x2048
+- Character Set: Characters from File
+- Character File: Fonts/unique_chars
+- Font Rendering Mode: Distance Field 16
+
+Generate a new font and overwrite Fonts/Roboto-v1.2/Roboto-Regular-With-Fallback.SDF
+
+Font updates are NOT required for html content changes (new FanLobbies or Tutorials).
+
+### New content packs
+
+*TODO*: Freeze hell.
+
+### Additional tools
+
+- convert_grey_icons.sh - Batch processes a series of textures in the unity folder and sets them white (we like to change colors from code if possible)
+
+<!-- A step by step series of examples that tell you have to get new content from lego into development -->
+
+## Running the tests
+
+Automated tests cover the compiler and model operations for manipulating EV3 programs. There's also support in place for running NUnity tests in the Unity editor, but nothing of value is actually being tested there right now.
+
+Two scripts run the compiler and model tests: `/runCompilerUnitTests.sh` and `/runModelTests.sh`. A third script, `/runUiTests.sh` is used to invoke the Unity editor tests.
+
+For manual UI testing, a detailed test case description can be found on the wall: [https://wall.trifork.com/display/EXTLMET/Manual+Test](https://wall.trifork.com/display/EXTLMET/Manual+Test). The most important test there is the [Smoke Test](https://wall.trifork.com/display/EXTLMET/Daily+Smoke+Test), which should be run regularly.
+
+## Usage
+
+<!-- Explain how the software is used -->
+
+## Edition switching
+
+There are 2 build editions for the EV3 Programmer: Education and Retail. The most significant difference is in the lobby content. In order to switch editions while in the Editor, use the EV3 menu > Switch Edition. This menu also shows which edition is selected.
+
+When building from a command line, use `/ciSwitchEdition.sh education` or `/ciSwitchEdition.sh retail`. *WARNING*: this script is intended to be used from a build server and deletes some files from the project structure that are not used with the target edition. The files can be restored from git.
+
+The editions differ in some logic, but also in a few unity Prefabs. There are 2 versions of various prefabs placed in /src/Lego-EV3-App-Unity/Assets/Prefabs/Editions/.Retail and .Education. These folders are stored for version control, while Unity edits `Proxy_` versions of these prefabs. Any change in Unity will automatically update the prefab for the current edition.
+
+To create new proxy prefabs, simply create the proxy version first in unity, and copy the .prefab and .meta file in both edition specific folders. Then modify the prefab individually for each edition as you normally would in unity.
+
+*WARNING*: Do not store direct references to a proxy prefab in a unity scene. You can safely store references to the prefab in the project, but do not save a scene containing a proxy prefab.
+
+## Deployment
+
+<!-- This section must describe everything a developer starting from scratch needs to know to check out the source, build the solution, and make a distribution of it.
+This includes:
+
+- Requirements to hardware and tool chain (e.g. OSX El Capitan, XCode 7.0, Unity 5.3, )
+- Any requirements to package managers
+- Any requirements to certificates and provisioning profiles
+- Any additional requirements to external libs / tools to build
+- How to build the solution, including description of relevant build scripts
+- How to make a new distribution build of the solution
+- How to access build server and trigger new debug / release builds -->
+
+### Android
+
+Use a standard unity build to get an android development build (click Build and Run from Build Settings).
+
+For a cli build (that can be used from a build server), run unity from a command line and invoke "BuildScript.BuildAndroid". Custom arguments for the unity build script:
+
+- *-executeMethod "BuildScript.BuildAndroid"*   - Invoke the correct script
+- *-projectPath "<Path to this repo>/src/Lego-EV3-App-Unity"*   - Build the EV3 project
+- *-outputDir "<Path to output apk>"*   - Final location of the apk
+- *-versionCode "<version>"*  - Version string
+- *-buildVariant "[Production/Demo/Daily]"*   - Enable/Disable various features for the build. This parameter is case insensitive.
+- *-buildEdition "[Retail/Education]"*   - We don't automatically detect edition at build time. Parameter must match the current edition. This does NOT switch the edition!
+- *-splitBinary [true/false]*   - PlayStore builds require this to be true, all other builds should have it set to false. Causes an .obb file to be created with most resources if true.
+- *-keystoreName, -keystorePass, -keyaliasName, -keyaliasPass*   - Signing for play store.
+
+### Chrome
+
+## Versioning
+
+<!-- E.g. "We use [SemVer](http://semver.org/) for versioning. For the versions available, see the [tags on this repository](https://github.com/your/project/tags)." -->
+
+Each build edition is versioned individually as 1.0.<build number>.
+
+## Contributors
+
+<!-- Who has been involved in the development of this solution on the customer and Trifork side. -->
+
+## Other Resources
+<!-- Links to other relevant documentation and resources for the solution.
+- System level design documentation
+- Link to Wall Site. (Be carefull not to repeat the same info on the Wall site and in the documentation assets listed here). -->
+
+## License
+<!-- If project is under a given license, or subject to 3rd party licenses.
+
+E.g. "This project is licensed under the MIT License - see the [LICENSE.md](LICENSE.md) file for details" -->
