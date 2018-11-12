@@ -322,7 +322,7 @@ MonoBehaviour:
     m_HorizontalOverflow: 0
     m_VerticalOverflow: 0
     m_LineSpacing: 1
-  m_Text: "Fallback:>\u30B5\u30DD"
+  m_Text: "Fallback:\u30B5\u30DD"
 --- !u!222 &681913737
 CanvasRenderer:
   m_ObjectHideFlags: 0
